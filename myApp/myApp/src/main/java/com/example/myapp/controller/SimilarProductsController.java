@@ -3,6 +3,7 @@ package com.example.myapp.controller;
 import com.example.myapp.model.ProductDetail;
 import com.example.myapp.service.SimilarProductsService;
 
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

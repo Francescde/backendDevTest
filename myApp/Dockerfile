@@ -1,3 +1,4 @@
+FROM redis:latest AS redis
 # Use an appropriate base image with Java and Maven pre-installed
 FROM maven:3.8.4-openjdk-17-slim AS build
 

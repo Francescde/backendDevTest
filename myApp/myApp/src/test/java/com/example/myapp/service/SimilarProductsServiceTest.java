@@ -1,5 +1,4 @@
 package com.example.myapp.service;
-
 import com.example.myapp.client.ExternalApiClient;
 import com.example.myapp.exception.NotFoundException;
 import com.example.myapp.model.ProductDetail;
@@ -8,92 +7,93 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 
-class SimilarProductsServiceTest {
+public class SimilarProductsServiceTest {
     @Mock
     private ExternalApiClient externalApiClient;
 
     private SimilarProductsService similarProductsService;
 
     @BeforeEach
-    void setUp() {
+    public void setup() {
         MockitoAnnotations.openMocks(this);
         similarProductsService = new SimilarProductsService(externalApiClient);
     }
 
     @Test
-    void testGetSimilarProducts_Successful() {
+    public void testGetSimilarProducts_Successful() throws ExecutionException, InterruptedException {
         String productId = "123";
         List<String> similarProductIds = Arrays.asList("456", "789");
 
-        // Mock the externalApiClient
-        when(externalApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
+        when(externalApiClient.fetchSimilarProductIds(eq(productId))).thenReturn(similarProductIds);
 
-        ProductDetail product1 = new ProductDetail();
-        product1.setId("456");
-        product1.setName("Product 1");
-        product1.setPrice(10.0);
-        product1.setAvailability(true);
+        ProductDetail productDetail1 = new ProductDetail();
+        productDetail1.setId("456");
+        productDetail1.setId("Product 456");
+        ProductDetail productDetail2 = new ProductDetail();
+        productDetail1.setId("789");
+        productDetail1.setId("Product 789");
 
-        ProductDetail product2 = new ProductDetail();
-        product2.setId("789");
-        product2.setName("Product 2");
-        product2.setPrice(20.0);
-        product2.setAvailability(false);
+        CompletableFuture<ProductDetail> future1 = CompletableFuture.completedFuture(productDetail1);
+        CompletableFuture<ProductDetail> future2 = CompletableFuture.completedFuture(productDetail2);
 
-        List<ProductDetail> expectedSimilarProducts = Arrays.asList(product1, product2);
+        when(externalApiClient.getFutureProductDetail(eq("456"))).thenReturn(future1);
+        when(externalApiClient.getFutureProductDetail(eq("789"))).thenReturn(future2);
 
-        // Mock the externalApiClient
-        when(externalApiClient.fetchProductDetails(similarProductIds)).thenReturn(expectedSimilarProducts);
+        List<ProductDetail> expectedProductDetails = Arrays.asList(productDetail1, productDetail2);
+        List<ProductDetail> similarProducts = similarProductsService.getSimilarProducts(productId);
 
-        // Call the getSimilarProducts method
-        List<ProductDetail> actualSimilarProducts = similarProductsService.getSimilarProducts(productId);
-
-        // Verify the calls to externalApiClient
-        verify(externalApiClient, times(1)).fetchSimilarProductIds(productId);
-        verify(externalApiClient, times(1)).fetchProductDetails(similarProductIds);
-
-        // Verify the result
-        assertEquals(expectedSimilarProducts, actualSimilarProducts);
+        assertEquals(expectedProductDetails, similarProducts);
     }
 
     @Test
-    void testGetSimilarProducts_NoSimilarProductIds() {
+    public void testGetSimilarProducts_EmptySimilarProductIds() {
         String productId = "123";
-        List<String> similarProductIds = Collections.emptyList();
+        List<String> similarProductIds = new ArrayList<>();
 
-        // Mock the externalApiClient
-        when(externalApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
+        when(externalApiClient.fetchSimilarProductIds(eq(productId))).thenReturn(similarProductIds);
 
-        // Call the getSimilarProducts method and assert that it throws NotFoundException
         assertThrows(NotFoundException.class, () -> similarProductsService.getSimilarProducts(productId));
-
-        // Verify the calls to externalApiClient
-        verify(externalApiClient, times(1)).fetchSimilarProductIds(productId);
-        verifyNoMoreInteractions(externalApiClient);
     }
 
     @Test
-    void testGetSimilarProducts_NoSimilarProducts() {
+    public void testGetSimilarProducts_ExceptionDuringFetchSimilarProductIds() {
+        String productId = "123";
+
+        when(externalApiClient.fetchSimilarProductIds(eq(productId))).thenThrow(new RuntimeException("Internal Server Error"));
+
+        assertThrows(NotFoundException.class, () -> similarProductsService.getSimilarProducts(productId));
+    }
+
+    @Test
+    public void testGetSimilarProducts_ExceptionDuringGetFutureProductDetail() throws ExecutionException, InterruptedException {
         String productId = "123";
         List<String> similarProductIds = Arrays.asList("456", "789");
 
-        // Mock the externalApiClient
-        when(externalApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
-        when(externalApiClient.fetchProductDetails(similarProductIds)).thenReturn(Collections.emptyList());
+        when(externalApiClient.fetchSimilarProductIds(eq(productId))).thenReturn(similarProductIds);
 
-        // Call the getSimilarProducts method and assert that it throws NotFoundException
-        assertThrows(NotFoundException.class, () -> similarProductsService.getSimilarProducts(productId));
+        ProductDetail productDetail1 = new ProductDetail();
+        productDetail1.setId("456");
+        productDetail1.setId("Product 456");
+        CompletableFuture<ProductDetail> future1 = CompletableFuture.completedFuture(productDetail1);
 
-        // Verify the calls to externalApiClient
-        verify(externalApiClient, times(1)).fetchSimilarProductIds(productId);
-        verify(externalApiClient, times(1)).fetchProductDetails(similarProductIds);
+        when(externalApiClient.getFutureProductDetail(eq("456"))).thenReturn(future1);
+        when(externalApiClient.getFutureProductDetail(eq("789"))).thenThrow(new RuntimeException("Internal Server Error"));
+
+        List<ProductDetail> expectedProductDetails = Arrays.asList(productDetail1);
+
+        List<ProductDetail> similarProducts = similarProductsService.getSimilarProducts(productId);
+
+        assertEquals(expectedProductDetails, similarProducts);
     }
 }
 

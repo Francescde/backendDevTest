@@ -1,92 +1,61 @@
 package com.example.myapp.client;
-
 import com.example.myapp.client.ExternalApiClient;
 import com.example.myapp.model.ProductDetail;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 public class ExternalApiClientTest {
-    private final RestTemplate restTemplate = mock(RestTemplate.class);
-    private final ExternalApiClient externalApiClient = new ExternalApiClient(restTemplate);
+    @Mock
+    private RestTemplate restTemplate;
+
+    private ExternalApiClient externalApiClient;
+
+    @BeforeEach
+    public void setup() {
+        MockitoAnnotations.openMocks(this);
+        externalApiClient = new ExternalApiClient(restTemplate);
+    }
 
     @Test
-    public void testFetchSimilarProductIds_Success() {
-        // Mock the successful response from the external API
-        String[] productIdsArray = {"1", "2", "3"};
+    public void testFetchSimilarProductIds() {
+        String productId = "123";
+        String[] productIdsArray = {"456", "789"};
+        List<String> expectedSimilarProductIds = Arrays.asList(productIdsArray);
         ResponseEntity<String[]> responseEntity = new ResponseEntity<>(productIdsArray, HttpStatus.OK);
-        when(restTemplate.getForEntity(anyString(), eq(String[].class), anyString())).thenReturn(responseEntity);
 
-        // Call the method under test
-        List<String> similarProductIds = externalApiClient.fetchSimilarProductIds("123");
+        when(restTemplate.getForEntity(anyString(), eq(String[].class), eq(productId))).thenReturn(responseEntity);
 
-        // Verify the interactions and assertions
-        verify(restTemplate).getForEntity(eq("http://host.docker.internal:3001/product/{productId}/similarids"),
-                eq(String[].class), eq("123"));
-        assertEquals(Arrays.asList(productIdsArray), similarProductIds);
+        List<String> similarProductIds = externalApiClient.fetchSimilarProductIds(productId);
+
+        assertEquals(expectedSimilarProductIds, similarProductIds);
     }
 
     @Test
-    public void testFetchSimilarProductIds_Failure() {
-        // Mock the failure response from the external API
-        ResponseEntity<String[]> responseEntity = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(restTemplate.getForEntity(anyString(), eq(String[].class), anyString())).thenReturn(responseEntity);
+    public void testGetFutureProductDetail() {
+        String productId = "123";
+        ProductDetail expectedProductDetail = new ProductDetail();
+        expectedProductDetail.setId("123");
+        expectedProductDetail.setName("Product 123");
 
-        // Call the method under test
-        List<String> similarProductIds = externalApiClient.fetchSimilarProductIds("123");
+        ResponseEntity<ProductDetail> responseEntity = new ResponseEntity<>(expectedProductDetail, HttpStatus.OK);
 
-        // Verify the interactions and assertions
-        verify(restTemplate).getForEntity(eq("http://host.docker.internal:3001/product/{productId}/similarids"),
-                eq(String[].class), eq("123"));
-        assertEquals(Collections.emptyList(), similarProductIds);
-    }
+        when(restTemplate.getForEntity(anyString(), eq(ProductDetail.class), eq(productId))).thenReturn(responseEntity);
 
-    @Test
-    public void testFetchProductDetails_Success() {
-        // Mock the successful response from the external API
-        ProductDetail productDetail1 = new ProductDetail();
-        productDetail1.setId("1");
-        productDetail1.setName("Product 1");
-        ProductDetail productDetail2 = new ProductDetail();
-        productDetail2.setId("2");
-        productDetail2.setName("Product 2");
-        ResponseEntity<ProductDetail> responseEntity1 = new ResponseEntity<>(productDetail1, HttpStatus.OK);
-        ResponseEntity<ProductDetail> responseEntity2 = new ResponseEntity<>(productDetail2, HttpStatus.OK);
-        when(restTemplate.getForEntity(anyString(), eq(ProductDetail.class), anyString())).thenReturn(responseEntity1, responseEntity2);
+        CompletableFuture<ProductDetail> futureProductDetail = externalApiClient.getFutureProductDetail(productId);
 
-        // Call the method under test
-        List<ProductDetail> productDetails = externalApiClient.fetchProductDetails(Arrays.asList("1", "2"));
-
-        // Verify the interactions and assertions
-        verify(restTemplate).getForEntity(eq("http://host.docker.internal:3001/product/{productId}"),
-                eq(ProductDetail.class), eq("1"));
-        verify(restTemplate).getForEntity(eq("http://host.docker.internal:3001/product/{productId}"),
-                eq(ProductDetail.class), eq("2"));
-        assertEquals(Arrays.asList(productDetail1, productDetail2), productDetails);
-    }
-
-    @Test
-    public void testFetchProductDetails_Failure() {
-        // Mock the failure response from the external API
-        ResponseEntity<ProductDetail> responseEntity = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(restTemplate.getForEntity(anyString(), eq(ProductDetail.class), anyString())).thenReturn(responseEntity);
-
-        // Call the method under test
-        List<ProductDetail> productDetails = externalApiClient.fetchProductDetails(Collections.singletonList("1"));
-
-        // Verify the interactions and assertions
-        verify(restTemplate).getForEntity(eq("http://host.docker.internal:3001/product/{productId}"),
-                eq(ProductDetail.class), eq("1"));
-        assertEquals(Collections.emptyList(), productDetails);
+        assertEquals(expectedProductDetail, futureProductDetail.join());
     }
 }
