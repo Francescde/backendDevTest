@@ -7,40 +7,40 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 @EnableCaching()
 @CacheConfig(cacheNames = "similarProductsCache")
 public class ExternalApiClient {
-    private final RestTemplate restTemplate;
-    private static final String BASE_URL = "http://host.docker.internal:3001";
     private static final Logger logger = LoggerFactory.getLogger(ExternalApiClient.class);
+    private final Environment environment;
+    private final RestTemplate restTemplate;
 
-    public ExternalApiClient(RestTemplate restTemplate) {
+    public ExternalApiClient(RestTemplate restTemplate, Environment environment) {
         this.restTemplate = restTemplate;
+        this.environment = environment;
     }
 
     @Cacheable(key = "#productId", unless = "#result == null")
     public List<String> fetchSimilarProductIds(String productId) {
-        String url = BASE_URL + "/product/{productId}/similarids";
+        String url =  environment.getProperty("externalApi.similarids.url");
         ResponseEntity<String[]> response = restTemplate.getForEntity(url.replace("{productId}",productId),
                 String[].class, productId);
         logger.debug("Fetched similar product IDs for productId={}: {}", productId,
-                Arrays.toString(response.getBody()));
-        return Arrays.asList(response.getBody());
+                Arrays.toString(response.getBody()!=null?response.getBody():null));
+        return response.getBody()!=null?List.of(response.getBody()):null;
     }
 
     @Cacheable(key = "#productId", unless = "#result == null")
     public ProductDetail getProductDetail(String productId) {
-        String url = BASE_URL + "/product/{productId}";
+        String url =  environment.getProperty("externalApi.productdetail.url");
         ResponseEntity<ProductDetail> response = restTemplate.getForEntity(url.replace("{productId}",productId),
                 ProductDetail.class, productId);
         return response.getBody();

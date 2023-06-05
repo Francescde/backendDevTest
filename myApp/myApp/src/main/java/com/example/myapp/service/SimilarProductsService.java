@@ -3,13 +3,11 @@ package com.example.myapp.service;
 import com.example.myapp.client.ExternalApiClient;
 import com.example.myapp.exception.NotFoundException;
 import com.example.myapp.model.ProductDetail;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +52,12 @@ public class SimilarProductsService {
             // The alternatives mentioned above are some possible options, but the choice depends on the
             // application requirements and the impact of the error on the overall flow.
         }
+
+        if (similarProductIds==null) {
+            String errorMessage = "Similar products null for productId=" + productId;
+            logger.error(errorMessage);
+            throw new NotFoundException(errorMessage);
+        }
         if (similarProductIds.isEmpty()) {
             String errorMessage = "Similar products not found for productId=" + productId;
             logger.warn(errorMessage);
@@ -66,7 +70,7 @@ public class SimilarProductsService {
 
         if (similarProducts.isEmpty()) {
             String errorMessage =
-                    "Any product detail found for productId=" + productId + " when were " + similarProducts.size() +
+                    "Any product detail found for productId=" + productId + " when were " + similarProductIds.size() +
                     " expected";
             logger.warn(errorMessage);
             return new ArrayList<>();

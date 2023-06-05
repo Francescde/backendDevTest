@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -13,59 +14,57 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
-public class ExternalApiClientTest {
+class ExternalApiClientTest {
 
     private ExternalApiClient externalApiClient;
 
     @Mock
     private RestTemplate restTemplate;
 
+    @Mock
+    private Environment environment;
+
     @BeforeEach
-    public void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-        externalApiClient = new ExternalApiClient(restTemplate);
+        externalApiClient = new ExternalApiClient(restTemplate, environment);
     }
 
     @Test
-    public void testFetchSimilarProductIds() {
-        // Mock the response from restTemplate
+    void fetchSimilarProductIds_ShouldReturnSimilarProductIds() {
         String productId = "123";
-        String[] productIdsArray = {"456", "789"};
-        ResponseEntity<String[]> responseEntity = new ResponseEntity<>(productIdsArray, HttpStatus.OK);
-        when(restTemplate.getForEntity(anyString(), eq(String[].class), eq(productId))).thenReturn(responseEntity);
+        String[] similarProductIds = {"456", "789"};
+        String apiUrl = "http://example.com/similar-products/{productId}";
 
-        // Call the method under test
-        List<String> similarProductIds = externalApiClient.fetchSimilarProductIds(productId);
+        when(environment.getProperty(anyString())).thenReturn(apiUrl);
+        when(restTemplate.getForEntity(apiUrl.replace("{productId}",productId), String[].class, productId))
+                .thenReturn(new ResponseEntity<>(similarProductIds, HttpStatus.OK));
 
-        // Verify the restTemplate was called with the correct arguments
-        String expectedUrl = "http://host.docker.internal:3001/product/123/similarids";
-        verify(restTemplate).getForEntity(expectedUrl, String[].class, productId);
+        List<String> expectedProductIds = Arrays.asList(similarProductIds);
+        List<String> actualProductIds = externalApiClient.fetchSimilarProductIds(productId);
 
-        // Verify the returned list is correct
-        List<String> expectedProductIds = Arrays.asList(productIdsArray);
-        assertEquals(expectedProductIds, similarProductIds);
+        assertEquals(expectedProductIds, actualProductIds);
     }
 
     @Test
-    public void testGetProductDetail() {
-        // Mock the response from restTemplate
+    void getProductDetail_ShouldReturnProductDetail() {
         String productId = "123";
         ProductDetail productDetail = new ProductDetail();
         productDetail.setId(productId);
         productDetail.setName("Product 1");
-        ResponseEntity<ProductDetail> responseEntity = new ResponseEntity<>(productDetail, HttpStatus.OK);
-        when(restTemplate.getForEntity(anyString(), eq(ProductDetail.class), eq(productId))).thenReturn(responseEntity);
+        productDetail.setPrice(10.0);
+        String apiUrl = "http://example.com/product/{productId}";
 
-        // Call the method under test
-        ProductDetail fetchedProductDetail = externalApiClient.getProductDetail(productId);
+        when(environment.getProperty(anyString())).thenReturn(apiUrl);
+        when(restTemplate.getForEntity(apiUrl.replace("{productId}",productId), ProductDetail.class, productId))
+                .thenReturn(new ResponseEntity<>(productDetail, HttpStatus.OK));
 
-        // Verify the restTemplate was called with the correct arguments
-        String expectedUrl = "http://host.docker.internal:3001/product/123";
-        verify(restTemplate).getForEntity(expectedUrl, ProductDetail.class, productId);
+        ProductDetail expectedProductDetail = productDetail;
+        ProductDetail actualProductDetail = externalApiClient.getProductDetail(productId);
 
-        // Verify the returned ProductDetail is correct
-        assertEquals(productDetail, fetchedProductDetail);
+        assertEquals(expectedProductDetail, actualProductDetail);
     }
 }
