@@ -1,8 +1,9 @@
 package com.example.myapp.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class ProductDetail {
+public class ProductDetail implements Serializable {
     private String id;
     private String name;
     private double price;

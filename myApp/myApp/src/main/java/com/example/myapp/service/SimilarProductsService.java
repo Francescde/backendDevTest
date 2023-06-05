@@ -81,7 +81,11 @@ public class SimilarProductsService {
 
         for (String productId : productIds) {
             try {
-                CompletableFuture<ProductDetail> future = externalApiClient.getFutureProductDetail(productId);
+                CompletableFuture<ProductDetail> future = CompletableFuture.supplyAsync(() -> {
+                    ProductDetail responseBody = externalApiClient.getProductDetail(productId);
+                    logger.debug("Fetched product detail for productId={}: {}", productId, responseBody);
+                    return responseBody;
+                });
                 futures.add(future);
             } catch (Exception e) {
                 logger.error("Error occurred while waiting for requests to complete", e);

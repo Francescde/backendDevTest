@@ -1,5 +1,5 @@
 package com.example.myapp.client;
-import com.example.myapp.client.ExternalApiClient;
+
 import com.example.myapp.model.ProductDetail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,17 +11,16 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ExternalApiClientTest {
-    @Mock
-    private RestTemplate restTemplate;
 
     private ExternalApiClient externalApiClient;
+
+    @Mock
+    private RestTemplate restTemplate;
 
     @BeforeEach
     public void setup() {
@@ -31,31 +30,42 @@ public class ExternalApiClientTest {
 
     @Test
     public void testFetchSimilarProductIds() {
+        // Mock the response from restTemplate
         String productId = "123";
         String[] productIdsArray = {"456", "789"};
-        List<String> expectedSimilarProductIds = Arrays.asList(productIdsArray);
         ResponseEntity<String[]> responseEntity = new ResponseEntity<>(productIdsArray, HttpStatus.OK);
-
         when(restTemplate.getForEntity(anyString(), eq(String[].class), eq(productId))).thenReturn(responseEntity);
 
+        // Call the method under test
         List<String> similarProductIds = externalApiClient.fetchSimilarProductIds(productId);
 
-        assertEquals(expectedSimilarProductIds, similarProductIds);
+        // Verify the restTemplate was called with the correct arguments
+        String expectedUrl = "http://host.docker.internal:3001/product/123/similarids";
+        verify(restTemplate).getForEntity(expectedUrl, String[].class, productId);
+
+        // Verify the returned list is correct
+        List<String> expectedProductIds = Arrays.asList(productIdsArray);
+        assertEquals(expectedProductIds, similarProductIds);
     }
 
     @Test
-    public void testGetFutureProductDetail() {
+    public void testGetProductDetail() {
+        // Mock the response from restTemplate
         String productId = "123";
-        ProductDetail expectedProductDetail = new ProductDetail();
-        expectedProductDetail.setId("123");
-        expectedProductDetail.setName("Product 123");
-
-        ResponseEntity<ProductDetail> responseEntity = new ResponseEntity<>(expectedProductDetail, HttpStatus.OK);
-
+        ProductDetail productDetail = new ProductDetail();
+        productDetail.setId(productId);
+        productDetail.setName("Product 1");
+        ResponseEntity<ProductDetail> responseEntity = new ResponseEntity<>(productDetail, HttpStatus.OK);
         when(restTemplate.getForEntity(anyString(), eq(ProductDetail.class), eq(productId))).thenReturn(responseEntity);
 
-        CompletableFuture<ProductDetail> futureProductDetail = externalApiClient.getFutureProductDetail(productId);
+        // Call the method under test
+        ProductDetail fetchedProductDetail = externalApiClient.getProductDetail(productId);
 
-        assertEquals(expectedProductDetail, futureProductDetail.join());
+        // Verify the restTemplate was called with the correct arguments
+        String expectedUrl = "http://host.docker.internal:3001/product/123";
+        verify(restTemplate).getForEntity(expectedUrl, ProductDetail.class, productId);
+
+        // Verify the returned ProductDetail is correct
+        assertEquals(productDetail, fetchedProductDetail);
     }
 }
