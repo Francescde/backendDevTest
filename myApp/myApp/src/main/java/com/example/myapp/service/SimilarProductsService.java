@@ -57,7 +57,7 @@ public class SimilarProductsService {
         if (similarProductIds.isEmpty()) {
             String errorMessage = "Similar products not found for productId=" + productId;
             logger.warn(errorMessage);
-            throw new NotFoundException(errorMessage);
+            return new ArrayList<>();
         }
 
         logger.debug("Fetched similar productIds for productId={}: {}", productId, similarProductIds);
@@ -65,9 +65,11 @@ public class SimilarProductsService {
         List<ProductDetail> similarProducts = fetchProductDetails(similarProductIds);
 
         if (similarProducts.isEmpty()) {
-            String errorMessage = "Similar product details not found for productId=" + productId;
+            String errorMessage =
+                    "Any product detail found for productId=" + productId + " when were " + similarProducts.size() +
+                    " expected";
             logger.warn(errorMessage);
-            throw new NotFoundException(errorMessage);
+            return new ArrayList<>();
         }
 
         logger.debug("Fetched similar products for productId={}: {}", productId, similarProducts);
