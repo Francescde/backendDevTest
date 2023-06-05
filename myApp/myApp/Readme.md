@@ -20,6 +20,8 @@ The base URL for the API is `http://localhost:5000`. The API supports the follow
 
 - `/product/{productId}/similar` - Retrieves a list of similar products to the product with the specified `productId`.
 
+The api uses redis for cache,logback for logging and provides swagger documentation under http://localhost:5000/swagger-ui/index.html
+
 ## Prerequisites<a name="prerequisites"></a>
 
 To run the SimilarProducts service, you need to have Docker installed.
@@ -92,7 +94,7 @@ Each product in the response will have the following properties:
 To retrieve similar products for a product with the ID "12345", send the following GET request:
 
 ```
-GET /product/12345
+GET /product/12345/similar
 
 /similar
 ```
