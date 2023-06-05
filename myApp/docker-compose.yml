@@ -5,3 +5,10 @@ services:
     container_name: my-redis
     ports:
       - 6379:6379
+  myapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: my-app
+    ports:
+      - 5000:5000
