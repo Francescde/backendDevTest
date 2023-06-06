@@ -22,6 +22,23 @@ The base URL for the API is `http://localhost:5000`. The API supports the follow
 
 The api uses redis for cache,logback for logging and provides swagger documentation under http://localhost:5000/swagger-ui/index.html
 
+The code for the API can be found in the `myApp/myApp` folder. It is distributed across three classes in an MVC structure:
+
+- `SimilarProductsController`: Receives the similar products request.
+- `SimilarProductsService`: Handles the business logic.
+- `MocksApiClient`: Handles the calls to the Mocks API service.
+
+Redis caching is performed in the `MocksApiClient` class rather than the controller or the service. This decision is made to ensure that caching is applied at the lowest level possible in the API call chain. Here are the reasons for this approach:
+
+1. **Responsibility Separation**: The API client class (`MocksApiClient`) is responsible for making the external API calls. By incorporating caching within the client class, we separate the concerns and keep the controller and service classes focused on their primary responsibilities.
+
+2. **Reusability**: The API client class can be reused across different services or controllers. By including caching in the client, the caching logic becomes part of the client's behavior and can be leveraged wherever the client is used.
+
+3. **Performance Optimization**: Caching at the client level allows us to avoid unnecessary external API calls. The client can check if the requested data is available in the cache before making an actual API call, reducing latency and improving overall performance.
+
+By employing Redis caching within the API client, we ensure that caching is applied consistently and transparently across different service invocations.
+
+
 ## Prerequisites<a name="prerequisites"></a>
 
 To run the SimilarProducts service, you need to have Docker installed.

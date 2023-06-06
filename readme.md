@@ -1,4 +1,5 @@
 
+
 # SimilarProducts API
 
 This readme provides detailed instructions on how to run the SimilarProducts service and examples of requests using the provided API.
@@ -19,6 +20,25 @@ The SimilarProducts API allows you to retrieve a list of similar products based 
 The base URL for the API is `http://localhost:5000`. The API supports the following endpoint:
 
 - `/product/{productId}/similar` - Retrieves a list of similar products to the product with the specified `productId`.
+
+The api uses redis for cache,logback for logging and provides swagger documentation under http://localhost:5000/swagger-ui/index.html
+
+The code for the API can be found in the `myApp/myApp` folder. It is distributed across three classes in an MVC structure:
+
+- `SimilarProductsController`: Receives the similar products request.
+- `SimilarProductsService`: Handles the business logic.
+- `MocksApiClient`: Handles the calls to the Mocks API service.
+
+Redis caching is performed in the `MocksApiClient` class rather than the controller or the service. This decision is made to ensure that caching is applied at the lowest level possible in the API call chain. Here are the reasons for this approach:
+
+1. **Responsibility Separation**: The API client class (`MocksApiClient`) is responsible for making the external API calls. By incorporating caching within the client class, we separate the concerns and keep the controller and service classes focused on their primary responsibilities.
+
+2. **Reusability**: The API client class can be reused across different services or controllers. By including caching in the client, the caching logic becomes part of the client's behavior and can be leveraged wherever the client is used.
+
+3. **Performance Optimization**: Caching at the client level allows us to avoid unnecessary external API calls. The client can check if the requested data is available in the cache before making an actual API call, reducing latency and improving overall performance.
+
+By employing Redis caching within the API client, we ensure that caching is applied consistently and transparently across different service invocations.
+
 
 ## Prerequisites<a name="prerequisites"></a>
 
@@ -92,7 +112,7 @@ Each product in the response will have the following properties:
 To retrieve similar products for a product with the ID "12345", send the following GET request:
 
 ```
-GET /product/12345
+GET /product/12345/similar
 
 /similar
 ```
@@ -123,7 +143,6 @@ This response indicates that there are two similar products to the product with 
 Please note that the actual response may vary depending on the data available in the system.
 
 That's it! You now have the necessary information to run the SimilarProducts service and interact with the API.
-
 
 # Backend dev technical test
 We want to offer a new feature to our customers showing similar products to the one they are currently seeing. To do this we agreed with our front-end applications to create a new REST API operation that will provide them the product detail of the similar products for a given one. [Here](./similarProducts.yaml) is the contract we agreed.
