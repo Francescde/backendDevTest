@@ -17,7 +17,7 @@ import java.util.List;
 
 @Component
 @EnableCaching()
-@CacheConfig(cacheNames = "similarProductsCache")
+@CacheConfig
 public class MocksApiClient {
     private static final Logger logger = LoggerFactory.getLogger(MocksApiClient.class);
     private final Environment environment;
@@ -28,7 +28,7 @@ public class MocksApiClient {
         this.environment = environment;
     }
 
-    @Cacheable(key = "#productId", unless = "#result == null")
+    @Cacheable(cacheNames = "similarProductIdsCache", key = "#productId", unless = "#result == null")
     public List<String> fetchSimilarProductIds(String productId) {
         String url =  environment.getProperty("externalApi.similarids.url");
         ResponseEntity<String[]> response = restTemplate.getForEntity(url.replace("{productId}",productId),
@@ -38,7 +38,7 @@ public class MocksApiClient {
         return response.getBody()!=null?List.of(response.getBody()):null;
     }
 
-    @Cacheable(key = "#productId", unless = "#result == null")
+    @Cacheable(cacheNames = "productDetailCache", key = "#productId", unless = "#result == null")
     public ProductDetail getProductDetail(String productId) {
         String url =  environment.getProperty("externalApi.productdetail.url");
         ResponseEntity<ProductDetail> response = restTemplate.getForEntity(url.replace("{productId}",productId),
