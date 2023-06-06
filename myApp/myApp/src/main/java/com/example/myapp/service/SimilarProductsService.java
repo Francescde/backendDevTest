@@ -53,7 +53,7 @@ public class SimilarProductsService {
             // application requirements and the impact of the error on the overall flow.
         }
 
-        if (similarProductIds==null) {
+        if (similarProductIds == null) {
             String errorMessage = "Similar products null for productId=" + productId;
             logger.error(errorMessage);
             throw new NotFoundException(errorMessage);
@@ -71,7 +71,7 @@ public class SimilarProductsService {
         if (similarProducts.isEmpty()) {
             String errorMessage =
                     "Any product detail found for productId=" + productId + " when were " + similarProductIds.size() +
-                    " expected";
+                            " expected";
             logger.warn(errorMessage);
             return new ArrayList<>();
         }
@@ -131,11 +131,13 @@ public class SimilarProductsService {
 
         for (CompletableFuture<ProductDetail> future : futures) {
             try {
-                ProductDetail productDetail = future.get(); // Get the result of each request
-                if (productDetail != null) {
-                    productDetails.add(productDetail);
+                if (future.isDone() && !future.isCompletedExceptionally()) {
+                    ProductDetail productDetail = future.get(); // Get the result of each request
+                    if (productDetail != null) {
+                        productDetails.add(productDetail);
+                    }
                 }
-            } catch ( Exception e) {
+            } catch (Exception e) {
                 logger.error("Error occurred while getting the result of a request", e);
                 // Since this is an external error, we don't want to propagate it further
                 // Instead, we can choose to perform alternative actions or provide a fallback response
