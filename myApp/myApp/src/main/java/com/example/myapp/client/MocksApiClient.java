@@ -18,12 +18,12 @@ import java.util.List;
 @Component
 @EnableCaching()
 @CacheConfig(cacheNames = "similarProductsCache")
-public class ExternalApiClient {
-    private static final Logger logger = LoggerFactory.getLogger(ExternalApiClient.class);
+public class MocksApiClient {
+    private static final Logger logger = LoggerFactory.getLogger(MocksApiClient.class);
     private final Environment environment;
     private final RestTemplate restTemplate;
 
-    public ExternalApiClient(RestTemplate restTemplate, Environment environment) {
+    public MocksApiClient(RestTemplate restTemplate, Environment environment) {
         this.restTemplate = restTemplate;
         this.environment = environment;
     }

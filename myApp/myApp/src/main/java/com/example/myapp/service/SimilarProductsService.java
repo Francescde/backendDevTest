@@ -1,6 +1,6 @@
 package com.example.myapp.service;
 
-import com.example.myapp.client.ExternalApiClient;
+import com.example.myapp.client.MocksApiClient;
 import com.example.myapp.exception.NotFoundException;
 import com.example.myapp.model.ProductDetail;
 import org.springframework.stereotype.Service;
@@ -14,18 +14,18 @@ import org.slf4j.LoggerFactory;
 
 @Service
 public class SimilarProductsService {
-    private final ExternalApiClient externalApiClient;
+    private final MocksApiClient mocksApiClient;
     private static final Logger logger = LoggerFactory.getLogger(SimilarProductsService.class);
 
-    public SimilarProductsService(ExternalApiClient externalApiClient) {
-        this.externalApiClient = externalApiClient;
+    public SimilarProductsService(MocksApiClient mocksApiClient) {
+        this.mocksApiClient = mocksApiClient;
     }
 
     public List<ProductDetail> getSimilarProducts(String productId) {
         logger.debug("Fetching similar products for productId={}", productId);
         List<String> similarProductIds;
         try {
-            similarProductIds = externalApiClient.fetchSimilarProductIds(productId);
+            similarProductIds = mocksApiClient.fetchSimilarProductIds(productId);
         } catch (Exception e) {
             logger.error("Error occurred while waiting for request to complete", e);
             String errorMessage = "Similar products not found for productId=" + productId;
@@ -88,7 +88,7 @@ public class SimilarProductsService {
         for (String productId : productIds) {
             try {
                 CompletableFuture<ProductDetail> future = CompletableFuture.supplyAsync(() -> {
-                    ProductDetail responseBody = externalApiClient.getProductDetail(productId);
+                    ProductDetail responseBody = mocksApiClient.getProductDetail(productId);
                     logger.debug("Fetched product detail for productId={}: {}", productId, responseBody);
                     return responseBody;
                 });

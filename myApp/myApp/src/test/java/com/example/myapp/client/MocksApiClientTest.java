@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-class ExternalApiClientTest {
+class MocksApiClientTest {
 
-    private ExternalApiClient externalApiClient;
+    private MocksApiClient mocksApiClient;
 
     @Mock
     private RestTemplate restTemplate;
@@ -30,7 +30,7 @@ class ExternalApiClientTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        externalApiClient = new ExternalApiClient(restTemplate, environment);
+        mocksApiClient = new MocksApiClient(restTemplate, environment);
     }
 
     @Test
@@ -44,7 +44,7 @@ class ExternalApiClientTest {
                 .thenReturn(new ResponseEntity<>(similarProductIds, HttpStatus.OK));
 
         List<String> expectedProductIds = Arrays.asList(similarProductIds);
-        List<String> actualProductIds = externalApiClient.fetchSimilarProductIds(productId);
+        List<String> actualProductIds = mocksApiClient.fetchSimilarProductIds(productId);
 
         assertEquals(expectedProductIds, actualProductIds);
     }
@@ -63,7 +63,7 @@ class ExternalApiClientTest {
                 .thenReturn(new ResponseEntity<>(productDetail, HttpStatus.OK));
 
         ProductDetail expectedProductDetail = productDetail;
-        ProductDetail actualProductDetail = externalApiClient.getProductDetail(productId);
+        ProductDetail actualProductDetail = mocksApiClient.getProductDetail(productId);
 
         assertEquals(expectedProductDetail, actualProductDetail);
     }

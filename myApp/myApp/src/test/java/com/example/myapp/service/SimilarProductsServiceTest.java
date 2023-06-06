@@ -1,6 +1,6 @@
 package com.example.myapp.service;
 
-import com.example.myapp.client.ExternalApiClient;
+import com.example.myapp.client.MocksApiClient;
 import com.example.myapp.exception.NotFoundException;
 import com.example.myapp.model.ProductDetail;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,20 +13,19 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class SimilarProductsServiceTest {
 
     @Mock
-    private ExternalApiClient externalApiClient;
+    private MocksApiClient mocksApiClient;
 
     private SimilarProductsService similarProductsService;
 
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        similarProductsService = new SimilarProductsService(externalApiClient);
+        similarProductsService = new SimilarProductsService(mocksApiClient);
     }
 
     @Test
@@ -36,7 +35,7 @@ public class SimilarProductsServiceTest {
         List<String> similarProductIds = new ArrayList<>();
         similarProductIds.add("456");
         similarProductIds.add("789");
-        when(externalApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
+        when(mocksApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
 
         ProductDetail productDetail1 = new ProductDetail();
         productDetail1.setName("Product 1");
@@ -44,8 +43,8 @@ public class SimilarProductsServiceTest {
         ProductDetail productDetail2 = new ProductDetail();
         productDetail1.setName("Product 2");
         productDetail1.setId("789");
-        when(externalApiClient.getProductDetail("456")).thenReturn(productDetail1);
-        when(externalApiClient.getProductDetail("789")).thenReturn(productDetail2);
+        when(mocksApiClient.getProductDetail("456")).thenReturn(productDetail1);
+        when(mocksApiClient.getProductDetail("789")).thenReturn(productDetail2);
 
         // Act
         List<ProductDetail> result = similarProductsService.getSimilarProducts(productId);
@@ -56,9 +55,9 @@ public class SimilarProductsServiceTest {
         assertEquals(productDetail2, result.get(1));
 
         // Verify that the external API methods were called
-        verify(externalApiClient).fetchSimilarProductIds(productId);
-        verify(externalApiClient).getProductDetail("456");
-        verify(externalApiClient).getProductDetail("789");
+        verify(mocksApiClient).fetchSimilarProductIds(productId);
+        verify(mocksApiClient).getProductDetail("456");
+        verify(mocksApiClient).getProductDetail("789");
     }
 
     @Test
@@ -66,7 +65,7 @@ public class SimilarProductsServiceTest {
         // Arrange
         String productId = "123";
         List<String> similarProductIds = new ArrayList<>();
-        when(externalApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
+        when(mocksApiClient.fetchSimilarProductIds(productId)).thenReturn(similarProductIds);
 
         // Act
         List<ProductDetail> result = similarProductsService.getSimilarProducts(productId);
@@ -75,16 +74,16 @@ public class SimilarProductsServiceTest {
         assertEquals(0, result.size());
 
         // Verify that the external API methods were called
-        verify(externalApiClient).fetchSimilarProductIds(productId);
+        verify(mocksApiClient).fetchSimilarProductIds(productId);
         // No calls to getProductDetail() expected
-        verifyNoMoreInteractions(externalApiClient);
+        verifyNoMoreInteractions(mocksApiClient);
     }
 
     @Test
     public void testGetSimilarProducts_ExternalApiThrowsException_ThrowsNotFoundException() {
         // Arrange
         String productId = "123";
-        when(externalApiClient.fetchSimilarProductIds(productId)).thenThrow(new RuntimeException());
+        when(mocksApiClient.fetchSimilarProductIds(productId)).thenThrow(new RuntimeException());
 
         // Act & Assert
         NotFoundException exception =
@@ -92,8 +91,8 @@ public class SimilarProductsServiceTest {
         assertEquals("Similar products not found for productId=123", exception.getMessage());
 
         // Verify that the external API methods were called
-        verify(externalApiClient).fetchSimilarProductIds(productId);
+        verify(mocksApiClient).fetchSimilarProductIds(productId);
         // No calls to getProductDetail() expected
-        verifyNoMoreInteractions(externalApiClient);
+        verifyNoMoreInteractions(mocksApiClient);
     }
 }
