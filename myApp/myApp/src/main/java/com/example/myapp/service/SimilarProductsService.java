@@ -3,14 +3,14 @@ package com.example.myapp.service;
 import com.example.myapp.client.MocksApiClient;
 import com.example.myapp.exception.NotFoundException;
 import com.example.myapp.model.ProductDetail;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.stream.Collectors;
 
 @Service
 public class SimilarProductsService {
@@ -23,44 +23,18 @@ public class SimilarProductsService {
 
     public List<ProductDetail> getSimilarProducts(String productId) {
         logger.debug("Fetching similar products for productId={}", productId);
+
         List<String> similarProductIds;
         try {
             similarProductIds = mocksApiClient.fetchSimilarProductIds(productId);
         } catch (Exception e) {
-            logger.error("Error occurred while waiting for request to complete", e);
-            String errorMessage = "Similar products not found for productId=" + productId;
-            throw new NotFoundException(errorMessage);
-            // Since this is an external error, we don't want to propagate it further
-            // Instead, we can choose to perform alternative actions or provide a fallback response
-
-            // Option 1: Provide a default response or fallback data
-            // ...
-
-            // Option 2: Retry the request after a delay
-            // ...
-
-            // Option 3: Notify the user about the error without exposing sensitive information
-            // ...
-
-            // Option 4: Log the error and continue processing, if applicable
-            // ...
-
-            // Add a comment to explain the handling of the external error and provide alternatives
-            // We encountered an error while calling the external API. Since this is an external error,
-            // we don't want to expose it directly to the client. Instead, we log the error for debugging
-            // purposes and choose an appropriate alternative action based on the specific use case.
-            // The alternatives mentioned above are some possible options, but the choice depends on the
-            // application requirements and the impact of the error on the overall flow.
+            throw new NotFoundException("Similar products not found for productId="+productId);
         }
 
         if (similarProductIds == null) {
-            String errorMessage = "Similar products null for productId=" + productId;
-            logger.error(errorMessage);
-            throw new NotFoundException(errorMessage);
-        }
-        if (similarProductIds.isEmpty()) {
-            String errorMessage = "Similar products not found for productId=" + productId;
-            logger.warn(errorMessage);
+            handleExternalError("Similar products null for productId=" + productId);
+        } else if (similarProductIds.isEmpty()) {
+            logger.warn("Similar products not found for productId={}", productId);
             return new ArrayList<>();
         }
 
@@ -69,10 +43,8 @@ public class SimilarProductsService {
         List<ProductDetail> similarProducts = fetchProductDetails(similarProductIds);
 
         if (similarProducts.isEmpty()) {
-            String errorMessage =
-                    "Any product detail found for productId=" + productId + " when were " + similarProductIds.size() +
-                            " expected";
-            logger.warn(errorMessage);
+            logger.warn("No product detail found for productId={}, expected {}",
+                    productId, similarProductIds.size());
             return new ArrayList<>();
         }
 
@@ -81,87 +53,42 @@ public class SimilarProductsService {
         return similarProducts;
     }
 
+    private void handleExternalError(String errorMessage) {
+        logger.error("Error occurred while waiting for request to complete");
+        throw new NotFoundException(errorMessage);
+        // Handle the external error here (e.g., provide fallback response, retry, log, etc.)
+    }
 
     private List<ProductDetail> fetchProductDetails(List<String> productIds) {
-        List<CompletableFuture<ProductDetail>> futures = new ArrayList<>();
-
-        for (String productId : productIds) {
-            try {
-                CompletableFuture<ProductDetail> future = CompletableFuture.supplyAsync(() -> {
+        List<CompletableFuture<ProductDetail>> futures = productIds.stream()
+                .map(productId -> CompletableFuture.supplyAsync(() -> {
                     ProductDetail responseBody = mocksApiClient.getProductDetail(productId);
                     logger.debug("Fetched product detail for productId={}: {}", productId, responseBody);
                     return responseBody;
-                });
-                futures.add(future);
-            } catch (Exception e) {
-                logger.error("Error occurred while waiting for requests to complete", e);
-            }
-        }
+                }))
+                .collect(Collectors.toList());
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         try {
             allFutures.get(); // Wait for all the requests to complete
         } catch (Exception e) {
-            logger.error("Error occurred while waiting for requests to complete", e);
-            // Since this is an external error, we don't want to propagate it further
-            // Instead, we can choose to perform alternative actions or provide a fallback response
-
-            // Option 1: Provide a default response or fallback data
-            // ...
-
-            // Option 2: Retry the request after a delay
-            // ...
-
-            // Option 3: Notify the user about the error without exposing sensitive information
-            // ...
-
-            // Option 4: Log the error and continue processing, if applicable
-            // ...
-
-            // Add a comment to explain the handling of the external error and provide alternatives
-            // We encountered an error while calling the external API. Since this is an external error,
-            // we don't want to expose it directly to the client. Instead, we log the error for debugging
-            // purposes and choose an appropriate alternative action based on the specific use case.
-            // The alternatives mentioned above are some possible options, but the choice depends on the
-            // application requirements and the impact of the error on the overall flow.
+            handleExternalError("Error occurred while waiting for requests to complete");
         }
 
-        List<ProductDetail> productDetails = new ArrayList<>();
-
-        for (CompletableFuture<ProductDetail> future : futures) {
-            try {
-                if (future.isDone() && !future.isCompletedExceptionally()) {
-                    ProductDetail productDetail = future.get(); // Get the result of each request
-                    if (productDetail != null) {
-                        productDetails.add(productDetail);
+        List<ProductDetail> productDetails = futures.stream()
+                .filter(CompletableFuture::isDone)
+                .filter(future -> !future.isCompletedExceptionally())
+                .map(future -> {
+                    try {
+                        return future.get(); // Get the result of each request
+                    } catch (Exception e) {
+                        logger.error("Error occurred while getting the result of a request", e);
+                        return null;
                     }
-                }
-            } catch (Exception e) {
-                logger.error("Error occurred while getting the result of a request", e);
-                // Since this is an external error, we don't want to propagate it further
-                // Instead, we can choose to perform alternative actions or provide a fallback response
-
-                // Option 1: Provide a default response or fallback data
-                // ...
-
-                // Option 2: Retry the request after a delay
-                // ...
-
-                // Option 3: Notify the user about the error without exposing sensitive information
-                // ...
-
-                // Option 4: Log the error and continue processing, if applicable
-                // ...
-
-                // Add a comment to explain the handling of the external error and provide alternatives
-                // We encountered an error while calling the external API. Since this is an external error,
-                // we don't want to expose it directly to the client. Instead, we log the error for debugging
-                // purposes and choose an appropriate alternative action based on the specific use case.
-                // The alternatives mentioned above are some possible options, but the choice depends on the
-                // application requirements and the impact of the error on the overall flow.
-            }
-        }
+                })
+                .filter(result -> result != null)
+                .collect(Collectors.toList());
 
         return productDetails;
     }
