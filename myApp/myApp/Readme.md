@@ -20,7 +20,8 @@ The base URL for the API is `http://localhost:5000`. The API supports the follow
 
 - `/product/{productId}/similar` - Retrieves a list of similar products to the product with the specified `productId`.
 
-The api uses redis for cache,logback for logging and provides swagger documentation under http://localhost:5000/swagger-ui/index.html
+The api uses in memory spring cache,logback for logging and provides swagger documentation under 
+http://localhost:5000/swagger-ui/index.html
 
 The code for the API can be found in the `myApp/myApp` folder. It is distributed across three classes in an MVC structure:
 
@@ -47,31 +48,14 @@ To run the SimilarProducts service, you need to have Docker installed.
 
 To execute the SimilarProducts service, you can use the provided `docker-compose.yml` file. Follow the steps below:
 
-1. You will find the `docker-compose.yml` file in the `myApp` folder.
-
-```yaml
-version: '3'
-services:
-  redis:
-    image: redis:latest
-    container_name: my-redis
-    ports:
-      - 6379:6379
-  myapp:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: my-app
-    ports:
-      - 5000:5000
-```
+1. You will find the `docker-compose.yml` file on the project root folder the file launches the necessary services.
 
 2. Open a terminal or command prompt and navigate to the directory with the `docker-compose.yml` file.
 
 3. Run the following command to start the services:
 
 ```bash
-docker-compose up
+docker-compose up -d simulado influxdb grafana myapp
 ```
 
 4. The SimilarProducts service will now be running on `http://localhost:5000`.
