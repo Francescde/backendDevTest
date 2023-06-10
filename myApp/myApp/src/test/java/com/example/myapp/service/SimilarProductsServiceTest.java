@@ -80,15 +80,16 @@ public class SimilarProductsServiceTest {
     }
 
     @Test
-    public void testGetSimilarProducts_ExternalApiThrowsException_ThrowsNotFoundException() {
+    public void testGetSimilarProducts_ExternalApiThrowsException_ThrowsSameException() {
         // Arrange
         String productId = "123";
-        when(mocksApiClient.fetchSimilarProductIds(productId)).thenThrow(new RuntimeException());
+        String errorMessage = "Similar products not found for productId=123\"";
+        when(mocksApiClient.fetchSimilarProductIds(productId)).thenThrow(new RuntimeException(errorMessage));
 
         // Act & Assert
-        NotFoundException exception =
-                assertThrows(NotFoundException.class, () -> similarProductsService.getSimilarProducts(productId));
-        assertEquals("Similar products not found for productId=123", exception.getMessage());
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> similarProductsService.getSimilarProducts(productId));
+        assertEquals(errorMessage, exception.getMessage());
 
         // Verify that the external API methods were called
         verify(mocksApiClient).fetchSimilarProductIds(productId);

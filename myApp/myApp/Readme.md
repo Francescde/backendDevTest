@@ -79,7 +79,8 @@ The API will respond with the following possible HTTP status codes:
 - `200 OK` - The request was successful, and a list of similar products is returned in the response body.
 - `404 Not Found` - The requested product could not be found.
 
-The response body, when successful (HTTP status code 200), will be in JSON format and contain an array of similar products ordered by similarity. In case no matches are found, the result should be an empty list.
+The response body, when successful (HTTP status code 200), will be in JSON format and contain an array of similar 
+products ordered by similarity. In case the mock Api fails the api myApi should return the same error.
 
 Each product in the response will have the following properties:
 

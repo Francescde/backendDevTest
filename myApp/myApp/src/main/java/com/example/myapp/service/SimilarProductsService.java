@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,11 +28,12 @@ public class SimilarProductsService {
         try {
             similarProductIds = mocksApiClient.fetchSimilarProductIds(productId);
         } catch (Exception e) {
-            throw new NotFoundException("Similar products not found for productId="+productId);
+            logger.error("Error occurred while fetching similar products for productId={}: {}", productId, e);
+            throw e;
         }
 
         if (similarProductIds == null) {
-            handleExternalError("Similar products null for productId=" + productId);
+            handleNullResult("Similar products null for productId=" + productId);
         } else if (similarProductIds.isEmpty()) {
             logger.warn("Similar products not found for productId={}", productId);
             return new ArrayList<>();
@@ -53,43 +54,28 @@ public class SimilarProductsService {
         return similarProducts;
     }
 
-    private void handleExternalError(String errorMessage) {
+    private void handleNullResult(String errorMessage) {
         logger.error("Error occurred while waiting for request to complete");
         throw new NotFoundException(errorMessage);
         // Handle the external error here (e.g., provide fallback response, retry, log, etc.)
     }
 
     private List<ProductDetail> fetchProductDetails(List<String> productIds) {
-        List<CompletableFuture<ProductDetail>> futures = productIds.stream()
-                .map(productId -> CompletableFuture.supplyAsync(() -> {
-                    ProductDetail responseBody = mocksApiClient.getProductDetail(productId);
-                    logger.debug("Fetched product detail for productId={}: {}", productId, responseBody);
-                    return responseBody;
-                }))
-                .collect(Collectors.toList());
-
-        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-        try {
-            allFutures.get(); // Wait for all the requests to complete
-        } catch (Exception e) {
-            handleExternalError("Error occurred while waiting for requests to complete");
-        }
-
-        List<ProductDetail> productDetails = futures.stream()
-                .filter(CompletableFuture::isDone)
-                .filter(future -> !future.isCompletedExceptionally())
-                .map(future -> {
+        List<ProductDetail> productDetails = productIds.stream()
+                .map(productId -> {
                     try {
-                        return future.get(); // Get the result of each request
+                        ProductDetail responseBody = mocksApiClient.getProductDetail(productId);
+                        logger.debug("Fetched product detail for productId={}: {}", productId, responseBody);
+                        return responseBody;
                     } catch (Exception e) {
-                        logger.error("Error occurred while getting the result of a request", e);
-                        return null;
+                        logger.error("Error occurred while fetching product detail for productId={}: {}", productId,e);
+                        throw e;
                     }
                 })
-                .filter(result -> result != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         return productDetails;
     }
+
 }
